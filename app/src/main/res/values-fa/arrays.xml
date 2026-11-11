@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="pvpn_theme_names">
+        <item>بنفش شیشه‌ای</item>
+        <item>قرمز نئونی</item>
+        <item>آبی اقیانوسی</item>
+        <item>سبز زمردی</item>
+        <item>طلایی</item>
+        <item>نیمه‌شب</item>
+        <item>شفق قطبی</item>
+        <item>صورتی نئونی</item>
+        <item>نقره‌ای</item>
+        <item>گرافیتی</item>
+    </string-array>
+    <string-array name="pvpn_theme_values">
+        <item>purple</item>
+        <item>red</item>
+        <item>ocean</item>
+        <item>emerald</item>
+        <item>gold</item>
+        <item>midnight</item>
+        <item>aurora</item>
+        <item>pink</item>
+        <item>silver</item>
+        <item>graphite</item>
+    </string-array>
+</resources>
