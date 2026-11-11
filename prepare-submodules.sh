@@ -8,18 +8,19 @@ ensure_checkout() {
   local revision="$3"
   local sentinel="$4"
 
-  # Reuse only a real Git checkout with its required source file.
-  if [[ -d "$path/.git" && -f "$path/$sentinel" ]]; then
-    git -C "$path" submodule update --init --recursive
-    return
+  if [[ ! -e "$path/.git" || ! -f "$path/$sentinel" ]]; then
+    rm -rf "$path"
+    git clone --filter=blob:none "$repository" "$path"
   fi
 
-  # ZIP-extracted folders are not valid Git submodule checkouts.
-  rm -rf "$path"
-
-  git clone --filter=blob:none --no-checkout "$repository" "$path"
   git -C "$path" checkout --detach "$revision"
-  git -C "$path" submodule update --init --recursive
+
+  echo "Syncing nested submodules in $path"
+
+  git -C "$path" submodule sync --recursive
+
+  git -C "$path" submodule update \
+    --init --recursive --force --checkout --jobs 4
 
   test -f "$path/$sentinel"
 }
@@ -36,12 +37,16 @@ ensure_checkout \
   "c5584feca8f6df70ee53eb2879e034b849a3d15a" \
   "build.mk"
 
-# Verify required native dependencies.
+echo "Verifying Hev native dependencies..."
+
 for module in yaml lwip hev-task-system; do
-  test -f "hev-socks5-tunnel/third-part/$module/Android.mk" || {
-    echo "Missing native dependency: $module"
+  module_dir="hev-socks5-tunnel/third-part/$module"
+
+  if [[ ! -f "$module_dir/Android.mk" ]]; then
+    echo "::error::Missing $module_dir/Android.mk"
+    git -C hev-socks5-tunnel submodule status --recursive || true
     exit 1
-  }
+  fi
 done
 
-echo "All native submodules are ready."
+echo "All pinned upstream submodules and native dependencies are ready."
