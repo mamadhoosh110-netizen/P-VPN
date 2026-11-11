@@ -1,0 +1,76 @@
+name: P VPN Android CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  debug-build:
+    name: Build Play Store debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source and submodules
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Prepare pinned upstream submodules
+        run: bash prepare-submodules.sh
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          log-accepted-android-sdk-licenses: false
+          cmdline-tools-version: '14742923'
+          packages: 'platforms;android-37.0 build-tools;37.0.0 platform-tools'
+
+      - name: Install NDK
+        run: |
+          yes | sdkmanager --install "ndk;30.0.16248370"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/30.0.16248370" >> "$GITHUB_ENV"
+
+      - name: Build hev-socks5-tunnel native library
+        run: |
+          bash compile-hevtun.sh
+          mkdir -p V2rayNG/app/libs
+          cp -R libs/. V2rayNG/app/libs/
+
+      - name: Download matching Xray AAR
+        shell: bash
+        run: |
+          cd AndroidLibXrayLite
+          tag=$(git describe --tags --abbrev=0)
+          echo "XRAY_TAG=$tag" >> "$GITHUB_ENV"
+          cd "$GITHUB_WORKSPACE"
+          mkdir -p V2rayNG/app/libs
+          gh release download "$tag" --repo 2dust/AndroidLibXrayLite --pattern 'libv2ray.aar' --dir V2rayNG/app/libs
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Build debug APK
+        working-directory: V2rayNG
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:assemblePlaystoreDebug
+
+      - name: Upload debug APKs
+        uses: actions/upload-artifact@v7
+        with:
+          name: p-vpn-debug-apks
+          path: V2rayNG/app/build/outputs/apk/playstore/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
