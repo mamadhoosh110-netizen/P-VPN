@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,10 +15,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -60,15 +59,10 @@ import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.dto.entities.SubscriptionUsageInfo
 import com.v2ray.ang.ui.compose.ItemDivider
 import com.v2ray.ang.ui.compose.LocalPvpnThemeStyle
-import com.v2ray.ang.ui.compose.ReorderableGridItem
-import com.v2ray.ang.ui.compose.ReorderableListItem
 import com.v2ray.ang.ui.compose.colorConfigType
 import com.v2ray.ang.ui.compose.colorPing
 import com.v2ray.ang.ui.compose.colorPingRed
 import com.v2ray.ang.ui.compose.verticalScrollbar
-import sh.calvin.reorderable.ReorderableItem
-import sh.calvin.reorderable.rememberReorderableLazyGridState
-import sh.calvin.reorderable.rememberReorderableLazyListState
 import kotlin.math.abs
 
 @Composable
@@ -92,7 +86,6 @@ fun GroupPagerPage(
 ) {
     val groupStateFlow = remember(groupId) { mainViewModel.serverGroupState(groupId) }
     val groupState by groupStateFlow.collectAsStateWithLifecycle()
-    val canReorder = groupId.isNotEmpty() && searchQuery.isEmpty()
     val actions = remember(onSelectServer, onEditServer, onMoreServer, onRemoveServer) {
         ServerRowActions(onSelectServer, onEditServer, onMoreServer, onRemoveServer)
     }
@@ -111,14 +104,12 @@ fun GroupPagerPage(
             rows = groupState.rows,
             selectedGuid = selectedGuid,
             locateTarget = locateTarget?.takeIf { it.groupId == groupId },
-            canReorder = canReorder,
             doubleColumnDisplay = doubleColumnDisplay,
             groupId = groupId,
             lazyListStates = lazyListStates,
             lazyGridStates = lazyGridStates,
             actions = actions,
             onLocateHandled = { mainViewModel.onAction(MainAction.LocateHandled) },
-            onMoveServer = { from, to -> mainViewModel.moveServer(groupId, from, to) },
             contentPadding = listPadding
         )
         if (usageInfo != null) {
@@ -141,68 +132,174 @@ private class ServerRowActions(
     val remove: (String, String) -> Unit
 )
 
+private data class ServerCountry(
+    val id: String,
+    val title: String,
+    val flag: String,
+    val order: Int
+)
+
+private data class ServerCountryGroup(
+    val country: ServerCountry,
+    val rows: List<ServerRowUiModel>
+)
+
+private val knownServerCountries = listOf(
+    ServerCountry("de", "آلمان", "🇩🇪", 1),
+    ServerCountry("us", "آمریکا", "🇺🇸", 2),
+    ServerCountry("nl", "هلند", "🇳🇱", 3),
+    ServerCountry("fr", "فرانسه", "🇫🇷", 4),
+    ServerCountry("gb", "بریتانیا", "🇬🇧", 5),
+    ServerCountry("tr", "ترکیه", "🇹🇷", 6),
+    ServerCountry("fi", "فنلاند", "🇫🇮", 7),
+    ServerCountry("se", "سوئد", "🇸🇪", 8),
+    ServerCountry("ca", "کانادا", "🇨🇦", 9),
+    ServerCountry("ru", "روسیه", "🇷🇺", 10),
+    ServerCountry("sg", "سنگاپور", "🇸🇬", 11),
+    ServerCountry("jp", "ژاپن", "🇯🇵", 12),
+    ServerCountry("pl", "لهستان", "🇵🇱", 13),
+    ServerCountry("ch", "سوئیس", "🇨🇭", 14),
+    ServerCountry("at", "اتریش", "🇦🇹", 15),
+    ServerCountry("ae", "امارات", "🇦🇪", 16),
+    ServerCountry("es", "اسپانیا", "🇪🇸", 17),
+    ServerCountry("it", "ایتالیا", "🇮🇹", 18),
+    ServerCountry("no", "نروژ", "🇳🇴", 19),
+    ServerCountry("be", "بلژیک", "🇧🇪", 20),
+    ServerCountry("other", "سایر سرورها", "🌐", 999)
+)
+
+private fun detectServerCountry(remarks: String): ServerCountry {
+    val value = remarks.lowercase()
+    fun hasCode(code: String): Boolean =
+        Regex("(^|[^a-z])${Regex.escape(code)}([^a-z]|$)", RegexOption.IGNORE_CASE)
+            .containsMatchIn(remarks)
+
+    val match = when {
+        "🇩🇪" in remarks || "germany" in value || "deutschland" in value || "آلمان" in value || hasCode("DE") -> "de"
+        "🇺🇸" in remarks || "united states" in value || "america" in value || "آمریکا" in value || hasCode("USA") || hasCode("US") -> "us"
+        "🇳🇱" in remarks || "netherlands" in value || "holland" in value || "هلند" in value || hasCode("NL") -> "nl"
+        "🇫🇷" in remarks || "france" in value || "فرانسه" in value || hasCode("FR") -> "fr"
+        "🇬🇧" in remarks || "united kingdom" in value || "great britain" in value || "england" in value || "بریتانیا" in value || hasCode("GB") || hasCode("UK") -> "gb"
+        "🇹🇷" in remarks || "turkey" in value || "türkiye" in value || "ترکیه" in value || hasCode("TR") -> "tr"
+        "🇫🇮" in remarks || "finland" in value || "فنلاند" in value || hasCode("FI") -> "fi"
+        "🇸🇪" in remarks || "sweden" in value || "سوئد" in value || hasCode("SE") -> "se"
+        "🇨🇦" in remarks || "canada" in value || "کانادا" in value || hasCode("CA") -> "ca"
+        "🇷🇺" in remarks || "russia" in value || "روسیه" in value || hasCode("RU") -> "ru"
+        "🇸🇬" in remarks || "singapore" in value || "سنگاپور" in value || hasCode("SG") -> "sg"
+        "🇯🇵" in remarks || "japan" in value || "ژاپن" in value || hasCode("JP") -> "jp"
+        "🇵🇱" in remarks || "poland" in value || "لهستان" in value || hasCode("PL") -> "pl"
+        "🇨🇭" in remarks || "switzerland" in value || "سوئیس" in value || hasCode("CH") -> "ch"
+        "🇦🇹" in remarks || "austria" in value || "اتریش" in value || hasCode("AT") -> "at"
+        "🇦🇪" in remarks || "uae" in value || "united arab emirates" in value || "امارات" in value || hasCode("AE") -> "ae"
+        "🇪🇸" in remarks || "spain" in value || "اسپانیا" in value || hasCode("ES") -> "es"
+        "🇮🇹" in remarks || "italy" in value || "ایتالیا" in value || hasCode("IT") -> "it"
+        "🇳🇴" in remarks || "norway" in value || "نروژ" in value || hasCode("NO") -> "no"
+        "🇧🇪" in remarks || "belgium" in value || "بلژیک" in value || hasCode("BE") -> "be"
+        else -> "other"
+    }
+    return knownServerCountries.first { it.id == match }
+}
+
+private fun buildCountryGroups(rows: List<ServerRowUiModel>): List<ServerCountryGroup> {
+    return rows.groupBy { detectServerCountry(it.remarks) }
+        .map { (country, countryRows) -> ServerCountryGroup(country, countryRows) }
+        .sortedBy { it.country.order }
+}
+
+@Composable
+private fun CountrySectionHeader(country: ServerCountry, count: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth()
+            .padding(horizontal = 9.dp, vertical = 5.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.48f))
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .padding(horizontal = 13.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(9.dp)
+    ) {
+        Text(country.flag, fontSize = 19.sp)
+        Text(
+            country.title,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+        Box(
+            modifier = Modifier.clip(RoundedCornerShape(50))
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.13f))
+                .padding(horizontal = 9.dp, vertical = 4.dp)
+        ) {
+            Text(
+                count.toString(),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
 @Composable
 private fun ServerListPage(
     rows: List<ServerRowUiModel>,
     selectedGuid: String?,
     locateTarget: LocateTarget?,
-    canReorder: Boolean,
     doubleColumnDisplay: Boolean,
     groupId: String,
     lazyListStates: MutableMap<String, LazyListState>,
     lazyGridStates: MutableMap<String, LazyGridState>,
     actions: ServerRowActions,
     onLocateHandled: () -> Unit,
-    onMoveServer: (Int, Int) -> Unit,
     contentPadding: PaddingValues
 ) {
+    val countryGroups = remember(rows) { buildCountryGroups(rows) }
+
     if (doubleColumnDisplay) {
         val gridState = remember(groupId) { lazyGridStates.getOrPut(groupId) { LazyGridState() } }
-        val reorderableGridState = if (canReorder) {
-            rememberReorderableLazyGridState(gridState) { from, to ->
-                onMoveServer(from.index, to.index)
-            }
-        } else null
-        LocateTargetEffect(locateTarget, rows, gridState, onLocateHandled)
+        LocateTargetEffect(locateTarget, countryGroups, gridState, onLocateHandled)
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             state = gridState,
             modifier = Modifier.fillMaxSize().verticalScrollbar(gridState),
             contentPadding = contentPadding
         ) {
-            itemsIndexed(items = rows, key = { _, item -> item.guid }) { _, row ->
-                val itemContent: @Composable () -> Unit = {
+            countryGroups.forEach { countryGroup ->
+                item(
+                    key = "country_header_${countryGroup.country.id}",
+                    span = { GridItemSpan(maxLineSpan) }
+                ) {
+                    CountrySectionHeader(countryGroup.country, countryGroup.rows.size)
+                }
+                itemsIndexed(
+                    items = countryGroup.rows,
+                    key = { _, item -> item.guid }
+                ) { _, row ->
                     ServerItemColumn(row, row.guid == selectedGuid, true, actions)
                 }
-                if (canReorder && reorderableGridState != null) {
-                    ReorderableItem(reorderableGridState, key = row.guid) { dragging ->
-                        ReorderableGridItem(scope = this, isDragging = dragging) { itemContent() }
-                    }
-                } else itemContent()
             }
         }
     } else {
         val listState = remember(groupId) { lazyListStates.getOrPut(groupId) { LazyListState() } }
-        val reorderableState = if (canReorder) {
-            rememberReorderableLazyListState(listState) { from, to ->
-                onMoveServer(from.index, to.index)
-            }
-        } else null
-        LocateTargetEffect(locateTarget, rows, listState, onLocateHandled)
+        LocateTargetEffect(locateTarget, countryGroups, listState, onLocateHandled)
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize().verticalScrollbar(listState),
             contentPadding = contentPadding
         ) {
-            itemsIndexed(items = rows, key = { _, item -> item.guid }) { _, row ->
-                if (canReorder && reorderableState != null) {
-                    ReorderableItem(reorderableState, key = row.guid) { dragging ->
-                        ReorderableListItem(scope = this, isDragging = dragging) {
-                            ServerItemRow(row, row.guid == selectedGuid, actions)
-                        }
-                        ItemDivider()
-                    }
-                } else {
+            countryGroups.forEach { countryGroup ->
+                item(key = "country_header_${countryGroup.country.id}") {
+                    CountrySectionHeader(countryGroup.country, countryGroup.rows.size)
+                }
+                itemsIndexed(
+                    items = countryGroup.rows,
+                    key = { _, item -> item.guid }
+                ) { _, row ->
                     ServerItemRow(row, row.guid == selectedGuid, actions)
                     ItemDivider()
                 }
@@ -214,32 +311,44 @@ private fun ServerListPage(
 @Composable
 private fun LocateTargetEffect(
     target: LocateTarget?,
-    rows: List<ServerRowUiModel>,
+    countryGroups: List<ServerCountryGroup>,
     state: LazyListState,
     onHandled: () -> Unit
 ) {
     if (target == null) return
-    LaunchedEffect(target, rows) {
-        val index = rows.indexOfFirst { it.guid == target.serverGuid }
-        if (index < 0) return@LaunchedEffect
-        state.scrollToItem(index, -state.layoutInfo.viewportSize.height / 3)
-        onHandled()
+    LaunchedEffect(target, countryGroups) {
+        var lazyIndex = 0
+        for (group in countryGroups) {
+            val rowIndex = group.rows.indexOfFirst { it.guid == target.serverGuid }
+            if (rowIndex >= 0) {
+                state.scrollToItem(lazyIndex + 1 + rowIndex, -state.layoutInfo.viewportSize.height / 3)
+                onHandled()
+                return@LaunchedEffect
+            }
+            lazyIndex += 1 + group.rows.size
+        }
     }
 }
 
 @Composable
 private fun LocateTargetEffect(
     target: LocateTarget?,
-    rows: List<ServerRowUiModel>,
+    countryGroups: List<ServerCountryGroup>,
     state: LazyGridState,
     onHandled: () -> Unit
 ) {
     if (target == null) return
-    LaunchedEffect(target, rows) {
-        val index = rows.indexOfFirst { it.guid == target.serverGuid }
-        if (index < 0) return@LaunchedEffect
-        state.scrollToItem(index, -state.layoutInfo.viewportSize.height / 3)
-        onHandled()
+    LaunchedEffect(target, countryGroups) {
+        var lazyIndex = 0
+        for (group in countryGroups) {
+            val rowIndex = group.rows.indexOfFirst { it.guid == target.serverGuid }
+            if (rowIndex >= 0) {
+                state.scrollToItem(lazyIndex + 1 + rowIndex, -state.layoutInfo.viewportSize.height / 3)
+                onHandled()
+                return@LaunchedEffect
+            }
+            lazyIndex += 1 + group.rows.size
+        }
     }
 }
 
@@ -486,4 +595,3 @@ internal suspend fun PagerState.navigateToPageOptimized(
         scrollToPage(target)
     }
 }
-
