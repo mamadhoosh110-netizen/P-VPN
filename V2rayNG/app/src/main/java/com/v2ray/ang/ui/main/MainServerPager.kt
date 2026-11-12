@@ -6,13 +6,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -92,38 +90,21 @@ fun GroupPagerPage(
     onOpenLink: (String) -> Unit,
     contentPadding: PaddingValues
 ) {
-    val groupStateFlow = remember(groupId) {
-        mainViewModel.serverGroupState(groupId)
-    }
+    val groupStateFlow = remember(groupId) { mainViewModel.serverGroupState(groupId) }
     val groupState by groupStateFlow.collectAsStateWithLifecycle()
     val canReorder = groupId.isNotEmpty() && searchQuery.isEmpty()
-    val actions = remember(
-        onSelectServer,
-        onEditServer,
-        onMoreServer,
-        onRemoveServer,
-    ) {
-        ServerRowActions(
-            select = onSelectServer,
-            edit = onEditServer,
-            more = onMoreServer,
-            remove = onRemoveServer,
-        )
+    val actions = remember(onSelectServer, onEditServer, onMoreServer, onRemoveServer) {
+        ServerRowActions(onSelectServer, onEditServer, onMoreServer, onRemoveServer)
     }
-    // The box floats over the list (the list scrolls underneath it), so the list is padded by the box height.
     val density = LocalDensity.current
     val layoutDirection = LocalLayoutDirection.current
     var infoHeightPx by remember { mutableIntStateOf(0) }
-    val listPadding = if (usageInfo == null) {
-        contentPadding
-    } else {
-        PaddingValues(
-            start = contentPadding.calculateStartPadding(layoutDirection),
-            top = contentPadding.calculateTopPadding() + with(density) { infoHeightPx.toDp() },
-            end = contentPadding.calculateEndPadding(layoutDirection),
-            bottom = contentPadding.calculateBottomPadding()
-        )
-    }
+    val listPadding = if (usageInfo == null) contentPadding else PaddingValues(
+        start = contentPadding.calculateStartPadding(layoutDirection),
+        top = contentPadding.calculateTopPadding() + with(density) { infoHeightPx.toDp() },
+        end = contentPadding.calculateEndPadding(layoutDirection),
+        bottom = contentPadding.calculateBottomPadding()
+    )
 
     Box(Modifier.fillMaxSize()) {
         ServerListPage(
@@ -137,9 +118,7 @@ fun GroupPagerPage(
             lazyGridStates = lazyGridStates,
             actions = actions,
             onLocateHandled = { mainViewModel.onAction(MainAction.LocateHandled) },
-            onMoveServer = { fromIndex, toIndex ->
-                mainViewModel.moveServer(groupId, fromIndex, toIndex)
-            },
+            onMoveServer = { from, to -> mainViewModel.moveServer(groupId, from, to) },
             contentPadding = listPadding
         )
         if (usageInfo != null) {
@@ -148,8 +127,7 @@ fun GroupPagerPage(
                 fallbackTitle = groupTitle,
                 onOpenLink = onOpenLink,
                 onRefresh = { mainViewModel.onAction(MainAction.UpdateGroupSubscription(groupId)) },
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
+                modifier = Modifier.align(Alignment.TopCenter)
                     .onSizeChanged { infoHeightPx = it.height }
             )
         }
@@ -160,7 +138,7 @@ private class ServerRowActions(
     val select: (String) -> Unit,
     val edit: (String, ProfileItem) -> Unit,
     val more: (String, ProfileItem) -> Unit,
-    val remove: (String, String) -> Unit,
+    val remove: (String, String) -> Unit
 )
 
 @Composable
@@ -179,92 +157,53 @@ private fun ServerListPage(
     contentPadding: PaddingValues
 ) {
     if (doubleColumnDisplay) {
-        val gridState = remember(groupId) {
-            lazyGridStates.getOrPut(groupId) { LazyGridState() }
-        }
+        val gridState = remember(groupId) { lazyGridStates.getOrPut(groupId) { LazyGridState() } }
         val reorderableGridState = if (canReorder) {
             rememberReorderableLazyGridState(gridState) { from, to ->
                 onMoveServer(from.index, to.index)
             }
         } else null
-
         LocateTargetEffect(locateTarget, rows, gridState, onLocateHandled)
-
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             state = gridState,
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScrollbar(gridState),
+            modifier = Modifier.fillMaxSize().verticalScrollbar(gridState),
             contentPadding = contentPadding
         ) {
             itemsIndexed(items = rows, key = { _, item -> item.guid }) { _, row ->
-                val content: @Composable () -> Unit = {
-                    ServerItemColumn(
-                        row = row,
-                        isSelected = row.guid == selectedGuid,
-                        doubleColumnDisplay = true,
-                        actions = actions
-                    )
+                val itemContent: @Composable () -> Unit = {
+                    ServerItemColumn(row, row.guid == selectedGuid, true, actions)
                 }
                 if (canReorder && reorderableGridState != null) {
-                    ReorderableItem(
-                        reorderableGridState,
-                        key = row.guid
-                    ) { isDragging ->
-                        ReorderableGridItem(
-                            scope = this,
-                            isDragging = isDragging
-                        ) { content() }
+                    ReorderableItem(reorderableGridState, key = row.guid) { dragging ->
+                        ReorderableGridItem(scope = this, isDragging = dragging) { itemContent() }
                     }
-                } else {
-                    content()
-                }
+                } else itemContent()
             }
         }
     } else {
-        val listState = remember(groupId) {
-            lazyListStates.getOrPut(groupId) { LazyListState() }
-        }
+        val listState = remember(groupId) { lazyListStates.getOrPut(groupId) { LazyListState() } }
         val reorderableState = if (canReorder) {
             rememberReorderableLazyListState(listState) { from, to ->
                 onMoveServer(from.index, to.index)
             }
         } else null
-
         LocateTargetEffect(locateTarget, rows, listState, onLocateHandled)
-
         LazyColumn(
             state = listState,
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScrollbar(listState),
+            modifier = Modifier.fillMaxSize().verticalScrollbar(listState),
             contentPadding = contentPadding
         ) {
             itemsIndexed(items = rows, key = { _, item -> item.guid }) { _, row ->
                 if (canReorder && reorderableState != null) {
-                    ReorderableItem(
-                        reorderableState,
-                        key = row.guid
-                    ) { isDragging ->
-                        ReorderableListItem(
-                            scope = this,
-                            isDragging = isDragging
-                        ) {
-                            ServerItemRow(
-                                row = row,
-                                isSelected = row.guid == selectedGuid,
-                                actions = actions
-                            )
+                    ReorderableItem(reorderableState, key = row.guid) { dragging ->
+                        ReorderableListItem(scope = this, isDragging = dragging) {
+                            ServerItemRow(row, row.guid == selectedGuid, actions)
                         }
                         ItemDivider()
                     }
                 } else {
-                    ServerItemRow(
-                        row = row,
-                        isSelected = row.guid == selectedGuid,
-                        actions = actions
-                    )
+                    ServerItemRow(row, row.guid == selectedGuid, actions)
                     ItemDivider()
                 }
             }
@@ -277,7 +216,7 @@ private fun LocateTargetEffect(
     target: LocateTarget?,
     rows: List<ServerRowUiModel>,
     state: LazyListState,
-    onHandled: () -> Unit,
+    onHandled: () -> Unit
 ) {
     if (target == null) return
     LaunchedEffect(target, rows) {
@@ -293,7 +232,7 @@ private fun LocateTargetEffect(
     target: LocateTarget?,
     rows: List<ServerRowUiModel>,
     state: LazyGridState,
-    onHandled: () -> Unit,
+    onHandled: () -> Unit
 ) {
     if (target == null) return
     LaunchedEffect(target, rows) {
@@ -310,12 +249,7 @@ private fun ServerItemRow(
     isSelected: Boolean,
     actions: ServerRowActions
 ) {
-    ServerListItem(
-        row = row,
-        isSelected = isSelected,
-        doubleColumnDisplay = false,
-        actions = actions
-    )
+    ServerListItem(row, isSelected, false, actions)
 }
 
 @Composable
@@ -326,12 +260,7 @@ private fun ServerItemColumn(
     actions: ServerRowActions
 ) {
     Column {
-        ServerListItem(
-            row = row,
-            isSelected = isSelected,
-            doubleColumnDisplay = doubleColumnDisplay,
-            actions = actions
-        )
+        ServerListItem(row, isSelected, doubleColumnDisplay, actions)
         ItemDivider()
     }
 }
@@ -343,157 +272,201 @@ private fun ServerListItem(
     doubleColumnDisplay: Boolean,
     actions: ServerRowActions
 ) {
-    val testResult = if (row.testDelayMillis == 0L) {
-        ""
-    } else {
-        stringResource(R.string.server_test_delay_value, row.testDelayMillis)
-    }
-    val selectedStateDescription = if (isSelected) {
-        stringResource(R.string.acc_selected_server)
-    } else {
-        null
-    }
+    val testResult = if (row.testDelayMillis == 0L) "—"
+        else stringResource(R.string.server_test_delay_value, row.testDelayMillis)
+    val selectedDescription = if (isSelected) stringResource(R.string.acc_selected_server) else null
     val themeStyle = LocalPvpnThemeStyle.current
+    val accent = MaterialTheme.colorScheme.primary
     val cardShape = RoundedCornerShape(themeStyle.cardRadius)
-    val cardBorderColor = if (isSelected || themeStyle.useGlow) {
-        MaterialTheme.colorScheme.primary.copy(alpha = if (isSelected) 0.72f else 0.38f)
-    } else {
-        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+    val innerShape = RoundedCornerShape((themeStyle.cardRadius.value * 0.62f).dp)
+    val pingColor = if (row.testDelayMillis < 0L) colorPingRed else colorPing
+    val borderColor = when {
+        isSelected -> accent.copy(alpha = 0.92f)
+        themeStyle.useGlow -> accent.copy(alpha = 0.42f)
+        else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f)
     }
     val cardBackground = if (isSelected) {
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.28f)
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.34f)
     } else {
         MaterialTheme.colorScheme.surface.copy(alpha = themeStyle.cardGlassAlpha)
     }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 10.dp, vertical = 4.dp)
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 5.dp)
             .then(
-                if (themeStyle.cardElevation > 0.dp) {
-                    Modifier.shadow(
-                        elevation = themeStyle.cardElevation,
-                        shape = cardShape,
-                        ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = if (themeStyle.useGlow) 0.16f else 0.04f),
-                        spotColor = MaterialTheme.colorScheme.primary.copy(alpha = if (themeStyle.useGlow) 0.12f else 0.03f)
-                    )
-                } else {
-                    Modifier
-                }
+                if (themeStyle.cardElevation > 0.dp) Modifier.shadow(
+                    elevation = themeStyle.cardElevation + if (isSelected) 2.dp else 0.dp,
+                    shape = cardShape,
+                    ambientColor = accent.copy(alpha = if (themeStyle.useGlow) 0.20f else 0.05f),
+                    spotColor = accent.copy(alpha = if (themeStyle.useGlow) 0.16f else 0.04f)
+                ) else Modifier
             )
             .clip(cardShape)
             .background(cardBackground)
             .border(
-                width = themeStyle.cardBorderWidth,
-                color = cardBorderColor,
+                width = if (isSelected) themeStyle.cardBorderWidth + 0.5.dp else themeStyle.cardBorderWidth,
+                color = borderColor,
                 shape = cardShape
             )
-            .height(IntrinsicSize.Min)
-            .semantics {
-                if (selectedStateDescription != null) {
-                    stateDescription = selectedStateDescription
-                }
-            }
+            .semantics { if (selectedDescription != null) stateDescription = selectedDescription }
             .clickable { actions.select(row.guid) }
     ) {
         Box(
-            Modifier
-                .width(10.dp)
-                .fillMaxHeight()
-        ) {
-            if (isSelected) {
-                Row {
-                    Spacer(Modifier.width(6.dp))
-                    Box(
-                        Modifier
-                            .width(4.dp)
-                            .fillMaxHeight()
-                            .padding(vertical = 10.dp)
-                            .background(MaterialTheme.colorScheme.primary)
-                    )
-                }
-            }
-        }
-
+            Modifier.fillMaxWidth().height(if (isSelected) 3.dp else 1.dp)
+                .background(if (isSelected) accent else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.24f))
+        )
         Column(
-            Modifier
-                .weight(1f)
-                .padding(start = 8.dp, end = 12.dp, top = 8.dp, bottom = 8.dp)
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(9.dp)
         ) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(row.remarks, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge.copy(lineBreak = LineBreak.Paragraph), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    Modifier.size(10.dp).clip(CircleShape)
+                        .background(if (isSelected) accent else MaterialTheme.colorScheme.outline.copy(alpha = 0.65f))
+                )
+                Text(
+                    row.remarks,
+                    Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                        lineBreak = LineBreak.Paragraph
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (isSelected) {
+                    Box(
+                        Modifier.clip(RoundedCornerShape(50))
+                            .background(accent.copy(alpha = 0.14f))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            stringResource(R.string.acc_selected_server),
+                            color = accent,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
+                    }
+                }
                 if (doubleColumnDisplay) {
-                    IconButton(onClick = { actions.more(row.guid, row.profile) }, Modifier.size(36.dp)) {
+                    IconButton(
+                        onClick = { actions.more(row.guid, row.profile) },
+                        modifier = Modifier.size(34.dp)
+                    ) {
                         Icon(
                             painterResource(R.drawable.ic_more_vert_24dp),
                             stringResource(R.string.acc_more),
-                            Modifier.size(24.dp)
+                            Modifier.size(21.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 } else {
-                    IconButton(onClick = { actions.more(row.guid, row.profile) }, Modifier.size(36.dp)) {
+                    IconButton(
+                        onClick = { actions.more(row.guid, row.profile) },
+                        modifier = Modifier.size(32.dp)
+                    ) {
                         Icon(
                             painterResource(R.drawable.ic_more_vert_24dp),
                             stringResource(R.string.acc_more),
-                            Modifier.size(24.dp)
+                            Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    IconButton(onClick = { actions.edit(row.guid, row.profile) }, Modifier.size(36.dp)) {
+                    IconButton(
+                        onClick = { actions.edit(row.guid, row.profile) },
+                        modifier = Modifier.size(32.dp)
+                    ) {
                         Icon(
                             painterResource(R.drawable.ic_edit_24dp),
                             stringResource(R.string.acc_edit),
-                            Modifier.size(24.dp)
+                            Modifier.size(19.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    IconButton(onClick = { actions.remove(row.guid, row.remarks) }, Modifier.size(36.dp)) {
+                    IconButton(
+                        onClick = { actions.remove(row.guid, row.remarks) },
+                        modifier = Modifier.size(32.dp)
+                    ) {
                         Icon(
                             painterResource(R.drawable.ic_delete_24dp),
                             stringResource(R.string.acc_delete),
-                            Modifier.size(24.dp)
+                            Modifier.size(19.dp),
+                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.88f)
                         )
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                Modifier.fillMaxWidth().clip(innerShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isSelected) 0.48f else 0.34f))
+                    .padding(horizontal = 10.dp, vertical = 9.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 if (row.subscriptionBadge.isNotBlank()) {
                     Box(
-                        Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)), Alignment.Center
+                        Modifier.clip(RoundedCornerShape(8.dp))
+                            .background(accent.copy(alpha = 0.16f))
+                            .padding(horizontal = 7.dp, vertical = 5.dp)
                     ) {
-                        Text(row.subscriptionBadge.uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Text(
+                            row.subscriptionBadge.uppercase(),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = accent,
+                            maxLines = 1
+                        )
                     }
                 }
                 Text(
                     row.statistics,
                     Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(
-                    row.typeDescription,
-                    modifier = Modifier.weight(1f, fill = false),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colorConfigType,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    testResult,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (row.testDelayMillis < 0L) colorPingRed else colorPing,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Box(
+                    Modifier.clip(RoundedCornerShape(50))
+                        .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.62f))
+                        .padding(horizontal = 9.dp, vertical = 5.dp)
+                ) {
+                    Text(
+                        row.typeDescription,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colorConfigType,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Row(
+                    Modifier.clip(RoundedCornerShape(50))
+                        .background(pingColor.copy(alpha = 0.12f))
+                        .padding(horizontal = 9.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    Box(Modifier.size(6.dp).clip(CircleShape).background(pingColor))
+                    Text(
+                        testResult,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = pingColor,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1
+                    )
+                }
             }
         }
     }
@@ -507,10 +480,10 @@ internal suspend fun PagerState.navigateToPageOptimized(
     val target = targetPage.coerceIn(0, pageCount - 1)
     val current = settledPage.coerceIn(0, pageCount - 1)
     if (target == current) return
-
     if (abs(target - current) == 1 && animateAdjacentPage) {
         animateScrollToPage(target)
     } else {
         scrollToPage(target)
     }
 }
+
