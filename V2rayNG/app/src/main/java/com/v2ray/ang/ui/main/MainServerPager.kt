@@ -1,6 +1,7 @@
 package com.v2ray.ang.ui.main
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,6 +28,7 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -58,6 +61,7 @@ import com.v2ray.ang.dto.LocateTarget
 import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.dto.entities.SubscriptionUsageInfo
 import com.v2ray.ang.ui.compose.ItemDivider
+import com.v2ray.ang.ui.compose.LocalPvpnThemeStyle
 import com.v2ray.ang.ui.compose.ReorderableGridItem
 import com.v2ray.ang.ui.compose.ReorderableListItem
 import com.v2ray.ang.ui.compose.colorConfigType
@@ -349,9 +353,42 @@ private fun ServerListItem(
     } else {
         null
     }
+    val themeStyle = LocalPvpnThemeStyle.current
+    val cardShape = RoundedCornerShape(themeStyle.cardRadius)
+    val cardBorderColor = if (isSelected || themeStyle.useGlow) {
+        MaterialTheme.colorScheme.primary.copy(alpha = if (isSelected) 0.72f else 0.38f)
+    } else {
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+    }
+    val cardBackground = if (isSelected) {
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.28f)
+    } else {
+        MaterialTheme.colorScheme.surface.copy(alpha = themeStyle.cardGlassAlpha)
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+            .then(
+                if (themeStyle.cardElevation > 0.dp) {
+                    Modifier.shadow(
+                        elevation = themeStyle.cardElevation,
+                        shape = cardShape,
+                        ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = if (themeStyle.useGlow) 0.16f else 0.04f),
+                        spotColor = MaterialTheme.colorScheme.primary.copy(alpha = if (themeStyle.useGlow) 0.12f else 0.03f)
+                    )
+                } else {
+                    Modifier
+                }
+            )
+            .clip(cardShape)
+            .background(cardBackground)
+            .border(
+                width = themeStyle.cardBorderWidth,
+                color = cardBorderColor,
+                shape = cardShape
+            )
             .height(IntrinsicSize.Min)
             .semantics {
                 if (selectedStateDescription != null) {
