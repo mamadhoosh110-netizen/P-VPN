@@ -292,7 +292,7 @@ private fun ServerListItem(
     }
 
     Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 5.dp)
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 3.dp)
             .then(
                 if (themeStyle.cardElevation > 0.dp) Modifier.shadow(
                     elevation = themeStyle.cardElevation + if (isSelected) 2.dp else 0.dp,
@@ -316,7 +316,7 @@ private fun ServerListItem(
                 .background(if (isSelected) accent else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.24f))
         )
         Column(
-            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 7.dp),
             verticalArrangement = Arrangement.spacedBy(9.dp)
         ) {
             Row(
