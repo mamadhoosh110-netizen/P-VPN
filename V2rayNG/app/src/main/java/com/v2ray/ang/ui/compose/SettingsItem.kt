@@ -1,5 +1,7 @@
 package com.v2ray.ang.ui.compose
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -21,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.painter.Painter
@@ -49,23 +53,33 @@ fun CollapsiblePreferenceGroupHeader(
     onExpandedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val shape = RoundedCornerShape(18.dp)
+
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .padding(horizontal = 6.dp, vertical = 5.dp)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.42f))
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.42f),
+                shape = shape
+            )
             .clickable { onExpandedChange(!expanded) }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.secondary,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
         )
         Icon(
             painter = painterResource(R.drawable.ic_expand_more_24dp),
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.secondary,
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .size(24.dp)
                 .rotate(if (expanded) 180f else 0f)
@@ -87,22 +101,40 @@ private fun SettingsItemRow(
     else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
     val descriptionColor = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
     else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+    val shape = RoundedCornerShape(17.dp)
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(enabled = enabled, onClick = onClick) else Modifier)
-            .padding(16.dp),
+            .padding(horizontal = 6.dp, vertical = 3.dp)
+            .clip(shape)
+            .background(
+                if (enabled) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f)
+                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.16f)
+            )
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.30f),
+                shape = shape
+            )
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(enabled = enabled, onClick = onClick)
+                } else {
+                    Modifier
+                }
+            )
+            .padding(horizontal = 14.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (icon != null) {
             Icon(
                 painter = icon,
                 contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = titleColor
+                modifier = Modifier.size(23.dp),
+                tint = if (enabled) MaterialTheme.colorScheme.primary else titleColor
             )
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(13.dp))
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -256,10 +288,10 @@ fun SettingsSwitchItem(
             Switch(
                 checked = checked,
                 onCheckedChange = if (enabled) onCheckedChange else null,
-                modifier = Modifier.scale(0.8f),
+                modifier = Modifier.scale(0.82f),
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.onSecondary,
-                    checkedTrackColor = MaterialTheme.colorScheme.secondary
+                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primary
                 ),
                 enabled = enabled
             )
