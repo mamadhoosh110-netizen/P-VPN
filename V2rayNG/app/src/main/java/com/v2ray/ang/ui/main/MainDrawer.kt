@@ -148,7 +148,7 @@ fun MainDrawerContent(drawerState: DrawerState, onNavigate: (MainDestination) ->
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = stringResource(R.string.app_name),
+                            text = "Parsian-MHG",
                             style = MaterialTheme.typography.titleLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )
