@@ -61,6 +61,7 @@ fun MainScreen(
     var showDelAllConfirm by remember { mutableStateOf(false) }
     var showDelDuplicateConfirm by remember { mutableStateOf(false) }
     var showDelInvalidConfirm by remember { mutableStateOf(false) }
+    var showStoreDialog by rememberSaveable { mutableStateOf(false) }
     var showRemoveConfirm by rememberSaveable(stateSaver = ServerDeleteTarget.Saver) {
         mutableStateOf<ServerDeleteTarget?>(null)
     }
@@ -125,6 +126,10 @@ fun MainScreen(
         onConfirmRemove = { guid -> showRemoveConfirm = null; onAction(MainAction.RemoveServer(guid)) }
     )
 
+    if (showStoreDialog) {
+        StoreDialog(onDismiss = { showStoreDialog = false })
+    }
+
     if (serverActionTarget != null) {
         val (guid, profile, more) = serverActionTarget!!
         ServerActionsDialog(
@@ -136,6 +141,7 @@ fun MainScreen(
             onRemove = removeServer,
         )
     }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -143,7 +149,11 @@ fun MainScreen(
                 drawerState = drawerState,
                 onNavigate = { route ->
                     scope.launch { drawerState.close() }
-                    onNavigate(route)
+                    if (route == MainDestination.Store) {
+                        showStoreDialog = true
+                    } else {
+                        onNavigate(route)
+                    }
                 }
             )
         }
@@ -162,114 +172,115 @@ fun MainScreen(
                     )
                 )
         ) {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            containerColor = Color.Transparent,
-            contentWindowInsets = ScaffoldDefaults.contentWindowInsets,
-            topBar = {
-                MainTopBar(
-                    isLoading = isLoading,
-                    showSearch = showSearch,
-                    searchQuery = searchQuery,
-                    onSearchQueryChange = { query: String ->
-                        searchQuery = query
-                        onAction(MainAction.Search(query))
-                    },
-                    onSearchClose = {
-                        searchQuery = ""
-                        onAction(MainAction.Search(""))
-                        showSearch = false
-                    },
-                    onSearchToggle = { show: Boolean -> showSearch = show },
-                    onMenuClick = { scope.launch { drawerState.open() } },
-                    onAction = onAction,
-                    onMoreMenuAction = { action ->
-                        when (action) {
-                            MainMoreMenuAction.RestartService -> onAction(MainAction.RestartService)
-                            MainMoreMenuAction.DeleteAll -> showDelAllConfirm = true
-                            MainMoreMenuAction.DeleteDuplicate -> showDelDuplicateConfirm = true
-                            MainMoreMenuAction.DeleteInvalid -> showDelInvalidConfirm = true
-                            MainMoreMenuAction.LocateSelected -> onAction(MainAction.LocateSelectedServer)
-                            MainMoreMenuAction.SortByTestResults -> onAction(MainAction.SortByTestResults)
-                            MainMoreMenuAction.TestAll -> onAction(MainAction.TestAllServers)
-                            MainMoreMenuAction.TestAllRealPing -> onAction(MainAction.TestRealAllServers)
-                            MainMoreMenuAction.UpdateSubscriptions -> onAction(MainAction.UpdateSubscriptions)
-                        }
-                    }
-                )
-            },
-            bottomBar = {
-                MainBottomBar(
-                    displayText = displayText,
-                    isRunning = isRunning,
-                    isDarkTheme = isDarkTheme,
-                    onAction = onAction
-                )
-            },
-            floatingActionButton = {},
-        ) { innerPadding ->
-            val layoutDirection = LocalLayoutDirection.current
-
-            if (groups.isNotEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                ) {
-                    if (groups.size > 1) {
-                        GroupTabBar(
-                            groups = groups,
-                            selectedTabIndex = pagerState.currentPage.coerceIn(0, groups.lastIndex),
-                            mainViewModel = mainViewModel,
-                            onTabClick = { targetIndex ->
-                                scope.launch {
-                                    pagerState.navigateToPageOptimized(
-                                        targetPage = targetIndex,
-                                        animateAdjacentPage = true
-                                    )
-                                }
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                containerColor = Color.Transparent,
+                contentWindowInsets = ScaffoldDefaults.contentWindowInsets,
+                topBar = {
+                    MainTopBar(
+                        isLoading = isLoading,
+                        showSearch = showSearch,
+                        searchQuery = searchQuery,
+                        onSearchQueryChange = { query: String ->
+                            searchQuery = query
+                            onAction(MainAction.Search(query))
+                        },
+                        onSearchClose = {
+                            searchQuery = ""
+                            onAction(MainAction.Search(""))
+                            showSearch = false
+                        },
+                        onSearchToggle = { show: Boolean -> showSearch = show },
+                        onMenuClick = { scope.launch { drawerState.open() } },
+                        onAction = onAction,
+                        onMoreMenuAction = { action ->
+                            when (action) {
+                                MainMoreMenuAction.RestartService -> onAction(MainAction.RestartService)
+                                MainMoreMenuAction.DeleteAll -> showDelAllConfirm = true
+                                MainMoreMenuAction.DeleteDuplicate -> showDelDuplicateConfirm = true
+                                MainMoreMenuAction.DeleteInvalid -> showDelInvalidConfirm = true
+                                MainMoreMenuAction.LocateSelected -> onAction(MainAction.LocateSelectedServer)
+                                MainMoreMenuAction.SortByTestResults -> onAction(MainAction.SortByTestResults)
+                                MainMoreMenuAction.TestAll -> onAction(MainAction.TestAllServers)
+                                MainMoreMenuAction.TestAllRealPing -> onAction(MainAction.TestRealAllServers)
+                                MainMoreMenuAction.UpdateSubscriptions -> onAction(MainAction.UpdateSubscriptions)
                             }
-                        )
-                    }
+                        }
+                    )
+                },
+                bottomBar = {
+                    MainBottomBar(
+                        displayText = displayText,
+                        isRunning = isRunning,
+                        isDarkTheme = isDarkTheme,
+                        onAction = onAction
+                    )
+                },
+                floatingActionButton = {},
+            ) { innerPadding ->
+                val layoutDirection = LocalLayoutDirection.current
 
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.fillMaxSize(),
-                        userScrollEnabled = true,
-                        beyondViewportPageCount = 1,
-                        key = { page -> groups.getOrNull(page)?.id ?: "group-page-$page" }
-                    ) { page ->
-                        val group = groups.getOrNull(page) ?: return@HorizontalPager
-
-                        GroupPagerPage(
-                            groupId = group.id,
-                            mainViewModel = mainViewModel,
-                            selectedGuid = selectedGuid,
-                            locateTarget = uiState.locateTarget,
-                            doubleColumnDisplay = doubleColumnDisplay,
-                            searchQuery = searchQuery,
-                            lazyListStates = lazyListStates,
-                            lazyGridStates = lazyGridStates,
-                            onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
-                            onEditServer = { guid, profile -> onAction(MainAction.EditServer(guid, profile)) },
-                            onMoreServer = { guid, profile ->
-                                serverActionTarget = Triple(guid, profile, true)
-                            },
-                            onRemoveServer = removeServer,
-                            usageInfo = group.usageInfo,
-                            groupTitle = group.remarks,
-                            onOpenLink = { url -> onAction(MainAction.OpenSubscriptionLink(url)) },
-                            contentPadding = PaddingValues(
-                                start = 0.dp,
-                                top = 0.dp,
-                                end = 0.dp,
-                                bottom = 80.dp
+                if (groups.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                    ) {
+                        if (groups.size > 1) {
+                            GroupTabBar(
+                                groups = groups,
+                                selectedTabIndex = pagerState.currentPage.coerceIn(0, groups.lastIndex),
+                                mainViewModel = mainViewModel,
+                                onTabClick = { targetIndex ->
+                                    scope.launch {
+                                        pagerState.navigateToPageOptimized(
+                                            targetPage = targetIndex,
+                                            animateAdjacentPage = true
+                                        )
+                                    }
+                                }
                             )
-                        )
+                        }
+
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.fillMaxSize(),
+                            userScrollEnabled = true,
+                            beyondViewportPageCount = 1,
+                            key = { page -> groups.getOrNull(page)?.id ?: "group-page-$page" }
+                        ) { page ->
+                            val group = groups.getOrNull(page) ?: return@HorizontalPager
+
+                            GroupPagerPage(
+                                groupId = group.id,
+                                mainViewModel = mainViewModel,
+                                selectedGuid = selectedGuid,
+                                locateTarget = uiState.locateTarget,
+                                doubleColumnDisplay = doubleColumnDisplay,
+                                searchQuery = searchQuery,
+                                lazyListStates = lazyListStates,
+                                lazyGridStates = lazyGridStates,
+                                onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
+                                onEditServer = { guid, profile -> onAction(MainAction.EditServer(guid, profile)) },
+                                onMoreServer = { guid, profile ->
+                                    serverActionTarget = Triple(guid, profile, true)
+                                },
+                                onRemoveServer = removeServer,
+                                usageInfo = group.usageInfo,
+                                groupTitle = group.remarks,
+                                onOpenLink = { url -> onAction(MainAction.OpenSubscriptionLink(url)) },
+                                contentPadding = PaddingValues(
+                                    start = 0.dp,
+                                    top = 0.dp,
+                                    end = 0.dp,
+                                    bottom = 80.dp
+                                )
+                            )
+                        }
                     }
                 }
             }
         }
-        }
     }
 }
+
