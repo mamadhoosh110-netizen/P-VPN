@@ -1,3 +1,4 @@
+
 package com.v2ray.ang.ui.main
 
 import androidx.annotation.DrawableRes
@@ -44,6 +45,7 @@ import com.v2ray.ang.ui.compose.verticalScrollbar
 
 enum class MainDestination(@DrawableRes val iconRes: Int, @StringRes val labelRes: Int) {
     Subscriptions(R.drawable.ic_subscriptions_24dp, R.string.title_sub_setting),
+    Store(R.drawable.ic_subscriptions_24dp, R.string.title_sub_setting),
     PerAppProxy(R.drawable.ic_per_apps_24dp, R.string.per_app_proxy_settings),
     Routing(R.drawable.ic_routing_24dp, R.string.routing_settings_title),
     UserAssets(R.drawable.ic_file_24dp, R.string.title_user_asset_setting),
@@ -57,6 +59,7 @@ enum class MainDestination(@DrawableRes val iconRes: Int, @StringRes val labelRe
 
 private val primaryDrawerItems = listOf(
     MainDestination.Subscriptions,
+    MainDestination.Store,
     MainDestination.PerAppProxy,
     MainDestination.Routing,
     MainDestination.UserAssets,
@@ -170,7 +173,11 @@ fun MainDrawerContent(drawerState: DrawerState, onNavigate: (MainDestination) ->
                 NavigationDrawerItem(
                     label = {
                         Text(
-                            text = stringResource(item.labelRes),
+                            text = if (item == MainDestination.Store) {
+                                "فروشگاه اشتراک"
+                            } else {
+                                stringResource(item.labelRes)
+                            },
                             style = MaterialTheme.typography.labelLarge
                         )
                     },
