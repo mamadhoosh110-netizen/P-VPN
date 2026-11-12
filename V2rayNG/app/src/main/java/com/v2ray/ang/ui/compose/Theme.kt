@@ -1,14 +1,11 @@
 package com.v2ray.ang.ui.compose
 
 import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -18,6 +15,8 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -172,7 +171,40 @@ fun resolveDarkTheme(): Boolean {
     }
 }
 
+
 val LocalDarkTheme = compositionLocalOf { false }
+
+/**
+ * Non-color design tokens for the selected P VPN theme.
+ * Screens and components can use these values to change their shape,
+ * borders, spacing and glass treatment along with the color palette.
+ */
+data class PvpnThemeStyle(
+    val cardRadius: Dp,
+    val cardBorderWidth: Dp,
+    val cardGlassAlpha: Float,
+    val cardElevation: Dp,
+    val useGlow: Boolean
+)
+
+private object PvpnThemeStyles {
+    val styles = mapOf(
+        "purple" to PvpnThemeStyle(22.dp, 1.0.dp, 0.16f, 5.dp, true),
+        "red" to PvpnThemeStyle(16.dp, 1.2.dp, 0.13f, 5.dp, true),
+        "ocean" to PvpnThemeStyle(20.dp, 0.8.dp, 0.15f, 3.dp, false),
+        "emerald" to PvpnThemeStyle(20.dp, 0.8.dp, 0.12f, 3.dp, false),
+        "gold" to PvpnThemeStyle(18.dp, 1.1.dp, 0.16f, 5.dp, true),
+        "midnight" to PvpnThemeStyle(15.dp, 0.8.dp, 0.10f, 2.dp, false),
+        "aurora" to PvpnThemeStyle(24.dp, 1.2.dp, 0.18f, 5.dp, true),
+        "pink" to PvpnThemeStyle(22.dp, 1.0.dp, 0.16f, 4.dp, true),
+        "silver" to PvpnThemeStyle(16.dp, 0.7.dp, 0.10f, 2.dp, false),
+        "graphite" to PvpnThemeStyle(14.dp, 0.7.dp, 0.08f, 1.dp, false)
+    )
+}
+
+val LocalPvpnThemeStyle = compositionLocalOf {
+    PvpnThemeStyles.styles.getValue("purple")
+}
 
 private object PvpnThemes {
     data class Palette(
@@ -202,31 +234,68 @@ fun AppTheme(
     darkTheme: Boolean = resolveDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val dynamicColor by ThemeManager.dynamicColorEnabled.collectAsState()
     val selectedPvpnTheme by ThemeManager.pvpnTheme.collectAsState()
-    val context = LocalContext.current
     val palette = PvpnThemes.colors[selectedPvpnTheme] ?: PvpnThemes.colors.getValue("purple")
-    val colorScheme = when {
-        darkTheme -> darkColorScheme(
+    // The selected P VPN theme always controls the complete Material color system.
+    // Android dynamic colors are intentionally not allowed to replace the user's
+    // selected palette, so the same theme identity is retained in light and dark mode.
+    val colorScheme = if (darkTheme) {
+        darkColorScheme(
             primary = palette.primary,
-            onPrimary = Color(0xFF09090B),
+            onPrimary = Color(0xFF100B1B),
+            primaryContainer = palette.secondary.copy(alpha = 0.28f),
+            onPrimaryContainer = palette.primary,
             secondary = palette.secondary,
-            onSecondary = Color(0xFF09090B),
+            onSecondary = Color(0xFF100B1B),
+            secondaryContainer = palette.secondary.copy(alpha = 0.22f),
+            onSecondaryContainer = Color(0xFFF7F3FC),
             tertiary = palette.tertiary,
+            onTertiary = Color(0xFF071311),
             background = palette.background,
+            onBackground = Color(0xFFF4F1F8),
             surface = palette.surface,
-            surfaceVariant = palette.surface,
-            onSurface = Color(0xFFF4F4F5),
-            onBackground = Color(0xFFF4F4F5),
-            outline = palette.secondary.copy(alpha = 0.55f)
+            onSurface = Color(0xFFF4F1F8),
+            surfaceVariant = palette.surface.copy(alpha = 0.94f),
+            onSurfaceVariant = Color(0xFFD0C9D8),
+            outline = palette.secondary.copy(alpha = 0.58f),
+            outlineVariant = palette.secondary.copy(alpha = 0.22f),
+            surfaceTint = palette.primary,
+            surfaceContainerLowest = palette.background,
+            surfaceContainerLow = palette.surface.copy(alpha = 0.72f),
+            surfaceContainer = palette.surface,
+            surfaceContainerHigh = palette.surface.copy(alpha = 0.94f),
+            surfaceContainerHighest = palette.surface
         )
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColor
-        else -> LightColor
+    } else {
+        lightColorScheme(
+            primary = palette.secondary,
+            onPrimary = Color.White,
+            primaryContainer = palette.secondary.copy(alpha = 0.15f),
+            onPrimaryContainer = palette.secondary,
+            secondary = palette.primary,
+            onSecondary = Color(0xFF17131D),
+            secondaryContainer = palette.primary.copy(alpha = 0.14f),
+            onSecondaryContainer = Color(0xFF201B26),
+            tertiary = palette.tertiary,
+            onTertiary = Color(0xFF071311),
+            background = Color(0xFFF7F5FA),
+            onBackground = Color(0xFF201B26),
+            surface = Color(0xFFFFFBFF),
+            onSurface = Color(0xFF201B26),
+            surfaceVariant = Color(0xFFF0EAF5),
+            onSurfaceVariant = Color(0xFF514A58),
+            outline = palette.secondary.copy(alpha = 0.55f),
+            outlineVariant = palette.secondary.copy(alpha = 0.20f),
+            surfaceTint = palette.primary,
+            surfaceContainerLowest = Color.White,
+            surfaceContainerLow = Color(0xFFFAF7FC),
+            surfaceContainer = Color(0xFFF4F0F7),
+            surfaceContainerHigh = Color(0xFFEFEAF3),
+            surfaceContainerHighest = Color(0xFFE9E3EE)
+        )
     }
+    val selectedThemeStyle =
+        PvpnThemeStyles.styles[selectedPvpnTheme] ?: PvpnThemeStyles.styles.getValue("purple")
     val snackbarController = rememberAppSnackbarController()
 
     val view = LocalView.current
@@ -243,6 +312,7 @@ fun AppTheme(
 
     CompositionLocalProvider(
         LocalDarkTheme provides darkTheme,
+        LocalPvpnThemeStyle provides selectedThemeStyle,
         LocalAppSnackbar provides snackbarController
     ) {
         MaterialTheme(
