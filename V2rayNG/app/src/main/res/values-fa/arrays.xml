@@ -1,3 +1,4 @@
+
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string-array name="pvpn_theme_names">
@@ -11,7 +12,18 @@
         <item>صورتی نئونی</item>
         <item>نقره‌ای</item>
         <item>گرافیتی</item>
+        <item>شیشه‌ای مدرن</item>
+        <item>نئون سبز</item>
+        <item>گرادیانی</item>
+        <item>متریال</item>
+        <item>داشبورد حرفه‌ای</item>
+        <item>لوکس</item>
+        <item>مشکی ساده</item>
+        <item>سفید ساده</item>
+        <item>سبز ساده</item>
+        <item>آبی ساده</item>
     </string-array>
+
     <string-array name="pvpn_theme_values">
         <item>purple</item>
         <item>red</item>
@@ -23,5 +35,15 @@
         <item>pink</item>
         <item>silver</item>
         <item>graphite</item>
+        <item>glass</item>
+        <item>neon</item>
+        <item>gradient</item>
+        <item>material</item>
+        <item>dashboard</item>
+        <item>luxury</item>
+        <item>mono_black</item>
+        <item>mono_white</item>
+        <item>mono_green</item>
+        <item>mono_blue</item>
     </string-array>
 </resources>
