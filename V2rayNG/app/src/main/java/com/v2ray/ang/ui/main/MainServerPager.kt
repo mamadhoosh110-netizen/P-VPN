@@ -385,197 +385,166 @@ private fun ServerListItem(
         else stringResource(R.string.server_test_delay_value, row.testDelayMillis)
     val selectedDescription = if (isSelected) stringResource(R.string.acc_selected_server) else null
     val themeStyle = LocalPvpnThemeStyle.current
-    val accent = MaterialTheme.colorScheme.primary
+    val accent = androidx.compose.ui.graphics.Color(0xFF16A34A)
     val cardShape = RoundedCornerShape(themeStyle.cardRadius)
-    val innerShape = RoundedCornerShape((themeStyle.cardRadius.value * 0.62f).dp)
     val pingColor = if (row.testDelayMillis < 0L) colorPingRed else colorPing
-    val borderColor = when {
-        isSelected -> accent.copy(alpha = 0.92f)
-        themeStyle.useGlow -> accent.copy(alpha = 0.42f)
-        else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f)
+
+    val borderColor = if (isSelected) {
+        accent.copy(alpha = 0.72f)
+    } else {
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.48f)
     }
     val cardBackground = if (isSelected) {
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.34f)
+        accent.copy(alpha = 0.075f)
     } else {
-        MaterialTheme.colorScheme.surface.copy(alpha = themeStyle.cardGlassAlpha)
+        MaterialTheme.colorScheme.surface
     }
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 3.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 2.dp)
             .then(
-                if (themeStyle.cardElevation > 0.dp) Modifier.shadow(
-                    elevation = themeStyle.cardElevation + if (isSelected) 2.dp else 0.dp,
-                    shape = cardShape,
-                    ambientColor = accent.copy(alpha = if (themeStyle.useGlow) 0.20f else 0.05f),
-                    spotColor = accent.copy(alpha = if (themeStyle.useGlow) 0.16f else 0.04f)
-                ) else Modifier
+                if (themeStyle.cardElevation > 0.dp) {
+                    Modifier.shadow(
+                        elevation = if (isSelected) 2.dp else 1.dp,
+                        shape = cardShape
+                    )
+                } else Modifier
             )
             .clip(cardShape)
             .background(cardBackground)
             .border(
-                width = if (isSelected) themeStyle.cardBorderWidth + 0.5.dp else themeStyle.cardBorderWidth,
+                width = if (isSelected) 1.2.dp else 0.7.dp,
                 color = borderColor,
                 shape = cardShape
             )
-            .semantics { if (selectedDescription != null) stateDescription = selectedDescription }
+            .semantics {
+                if (selectedDescription != null) stateDescription = selectedDescription
+            }
             .clickable { actions.select(row.guid) }
+            .padding(start = 10.dp, end = 4.dp, top = 5.dp, bottom = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(7.dp)
     ) {
+        // Small selection indicator; green only for the selected configuration.
         Box(
-            Modifier.fillMaxWidth().height(if (isSelected) 3.dp else 1.dp)
-                .background(if (isSelected) accent else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.24f))
+            Modifier
+                .size(7.dp)
+                .clip(CircleShape)
+                .background(
+                    if (isSelected) accent
+                    else MaterialTheme.colorScheme.outlineVariant
+                )
         )
+
         Column(
-            Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 7.dp),
-            verticalArrangement = Arrangement.spacedBy(9.dp)
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
+            // Keep the configuration title compact: one line, no secondary text.
+            Text(
+                text = row.remarks,
+                style = MaterialTheme.typography.titleSmall.copy(
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
             Row(
-                Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Box(
-                    Modifier.size(10.dp).clip(CircleShape)
-                        .background(if (isSelected) accent else MaterialTheme.colorScheme.outline.copy(alpha = 0.65f))
-                )
                 Text(
-                    row.remarks,
-                    Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                        lineBreak = LineBreak.Paragraph
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (isSelected) {
-                    Box(
-                        Modifier.clip(RoundedCornerShape(50))
-                            .background(accent.copy(alpha = 0.14f))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            stringResource(R.string.acc_selected_server),
-                            color = accent,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1
-                        )
-                    }
-                }
-                if (doubleColumnDisplay) {
-                    IconButton(
-                        onClick = { actions.more(row.guid, row.profile) },
-                        modifier = Modifier.size(34.dp)
-                    ) {
-                        Icon(
-                            painterResource(R.drawable.ic_more_vert_24dp),
-                            stringResource(R.string.acc_more),
-                            Modifier.size(21.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                } else {
-                    IconButton(
-                        onClick = { actions.more(row.guid, row.profile) },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            painterResource(R.drawable.ic_more_vert_24dp),
-                            stringResource(R.string.acc_more),
-                            Modifier.size(20.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    IconButton(
-                        onClick = { actions.edit(row.guid, row.profile) },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            painterResource(R.drawable.ic_edit_24dp),
-                            stringResource(R.string.acc_edit),
-                            Modifier.size(19.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    IconButton(
-                        onClick = { actions.remove(row.guid, row.remarks) },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            painterResource(R.drawable.ic_delete_24dp),
-                            stringResource(R.string.acc_delete),
-                            Modifier.size(19.dp),
-                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.88f)
-                        )
-                    }
-                }
-            }
-            Row(
-                Modifier.fillMaxWidth().clip(innerShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isSelected) 0.48f else 0.34f))
-                    .padding(horizontal = 10.dp, vertical = 9.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (row.subscriptionBadge.isNotBlank()) {
-                    Box(
-                        Modifier.clip(RoundedCornerShape(8.dp))
-                            .background(accent.copy(alpha = 0.16f))
-                            .padding(horizontal = 7.dp, vertical = 5.dp)
-                    ) {
-                        Text(
-                            row.subscriptionBadge.uppercase(),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = accent,
-                            maxLines = 1
-                        )
-                    }
-                }
-                Text(
-                    row.statistics,
-                    Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodySmall,
+                    text = row.typeDescription,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-            }
-            Row(
-                Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
                 Box(
-                    Modifier.clip(RoundedCornerShape(50))
-                        .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.62f))
-                        .padding(horizontal = 9.dp, vertical = 5.dp)
-                ) {
-                    Text(
-                        row.typeDescription,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = colorConfigType,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                    Modifier
+                        .size(3.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.outlineVariant)
+                )
                 Row(
-                    Modifier.clip(RoundedCornerShape(50))
-                        .background(pingColor.copy(alpha = 0.12f))
-                        .padding(horizontal = 9.dp, vertical = 5.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Box(Modifier.size(6.dp).clip(CircleShape).background(pingColor))
+                    Box(
+                        Modifier
+                            .size(5.dp)
+                            .clip(CircleShape)
+                            .background(pingColor)
+                    )
                     Text(
-                        testResult,
+                        text = testResult,
                         style = MaterialTheme.typography.labelSmall,
                         color = pingColor,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Medium,
                         maxLines = 1
                     )
                 }
+                if (isSelected) {
+                    Text(
+                        text = stringResource(R.string.acc_selected_server),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = accent,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+
+        if (doubleColumnDisplay) {
+            IconButton(
+                onClick = { actions.more(row.guid, row.profile) },
+                modifier = Modifier.size(30.dp)
+            ) {
+                Icon(
+                    painterResource(R.drawable.ic_more_vert_24dp),
+                    stringResource(R.string.acc_more),
+                    Modifier.size(19.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            IconButton(
+                onClick = { actions.more(row.guid, row.profile) },
+                modifier = Modifier.size(30.dp)
+            ) {
+                Icon(
+                    painterResource(R.drawable.ic_more_vert_24dp),
+                    stringResource(R.string.acc_more),
+                    Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            IconButton(
+                onClick = { actions.edit(row.guid, row.profile) },
+                modifier = Modifier.size(30.dp)
+            ) {
+                Icon(
+                    painterResource(R.drawable.ic_edit_24dp),
+                    stringResource(R.string.acc_edit),
+                    Modifier.size(17.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            IconButton(
+                onClick = { actions.remove(row.guid, row.remarks) },
+                modifier = Modifier.size(30.dp)
+            ) {
+                Icon(
+                    painterResource(R.drawable.ic_delete_24dp),
+                    stringResource(R.string.acc_delete),
+                    Modifier.size(17.dp),
+                    tint = MaterialTheme.colorScheme.error
+                )
             }
         }
     }
