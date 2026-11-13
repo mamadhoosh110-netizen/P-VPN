@@ -125,6 +125,7 @@ class MainActivity : HelperBaseComponentActivity() {
     private fun navigateTo(destination: MainDestination) {
         val intent = when (destination) {
             MainDestination.Subscriptions -> Intent(this, SubSettingActivity::class.java)
+            MainDestination.Store -> return
             MainDestination.PerAppProxy -> Intent(this, PerAppProxyActivity::class.java)
             MainDestination.Routing -> Intent(this, RoutingSettingActivity::class.java)
             MainDestination.UserAssets -> Intent(this, UserAssetActivity::class.java)
