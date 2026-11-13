@@ -189,16 +189,26 @@ data class PvpnThemeStyle(
 
 private object PvpnThemeStyles {
     val styles = mapOf(
-        "purple" to PvpnThemeStyle(22.dp, 1.0.dp, 0.16f, 5.dp, true),
-        "red" to PvpnThemeStyle(16.dp, 1.2.dp, 0.13f, 5.dp, true),
-        "ocean" to PvpnThemeStyle(20.dp, 0.8.dp, 0.15f, 3.dp, false),
-        "emerald" to PvpnThemeStyle(20.dp, 0.8.dp, 0.12f, 3.dp, false),
-        "gold" to PvpnThemeStyle(18.dp, 1.1.dp, 0.16f, 5.dp, true),
-        "midnight" to PvpnThemeStyle(15.dp, 0.8.dp, 0.10f, 2.dp, false),
-        "aurora" to PvpnThemeStyle(24.dp, 1.2.dp, 0.18f, 5.dp, true),
-        "pink" to PvpnThemeStyle(22.dp, 1.0.dp, 0.16f, 4.dp, true),
-        "silver" to PvpnThemeStyle(16.dp, 0.7.dp, 0.10f, 2.dp, false),
-        "graphite" to PvpnThemeStyle(14.dp, 0.7.dp, 0.08f, 1.dp, false)
+        "purple" to PvpnThemeStyle(18.dp, 0.8.dp, 0.08f, 2.dp, false),
+        "red" to PvpnThemeStyle(18.dp, 0.8.dp, 0.08f, 2.dp, false),
+        "ocean" to PvpnThemeStyle(18.dp, 0.8.dp, 0.08f, 2.dp, false),
+        "emerald" to PvpnThemeStyle(18.dp, 0.8.dp, 0.08f, 2.dp, false),
+        "gold" to PvpnThemeStyle(18.dp, 0.8.dp, 0.08f, 2.dp, false),
+        "midnight" to PvpnThemeStyle(16.dp, 0.6.dp, 0.04f, 1.dp, false),
+        "aurora" to PvpnThemeStyle(20.dp, 0.8.dp, 0.08f, 2.dp, false),
+        "pink" to PvpnThemeStyle(18.dp, 0.8.dp, 0.08f, 2.dp, false),
+        "silver" to PvpnThemeStyle(16.dp, 0.6.dp, 0.04f, 1.dp, false),
+        "graphite" to PvpnThemeStyle(14.dp, 0.5.dp, 0.03f, 1.dp, false),
+        "glass" to PvpnThemeStyle(22.dp, 1.dp, 0.12f, 4.dp, true),
+        "neon" to PvpnThemeStyle(18.dp, 1.dp, 0.10f, 3.dp, true),
+        "gradient" to PvpnThemeStyle(20.dp, 0.8.dp, 0.10f, 3.dp, true),
+        "material" to PvpnThemeStyle(16.dp, 0.6.dp, 0.05f, 2.dp, false),
+        "dashboard" to PvpnThemeStyle(14.dp, 0.5.dp, 0.04f, 1.dp, false),
+        "luxury" to PvpnThemeStyle(18.dp, 0.8.dp, 0.08f, 3.dp, false),
+        "mono_black" to PvpnThemeStyle(14.dp, 0.dp, 0f, 0.dp, false),
+        "mono_white" to PvpnThemeStyle(14.dp, 0.dp, 0f, 0.dp, false),
+        "mono_green" to PvpnThemeStyle(14.dp, 0.dp, 0f, 0.dp, false),
+        "mono_blue" to PvpnThemeStyle(14.dp, 0.dp, 0f, 0.dp, false)
     )
 }
 
@@ -216,16 +226,26 @@ private object PvpnThemes {
     )
 
     val colors = mapOf(
-        "purple" to Palette(Color(0xFFB58CFF), Color(0xFF8B5CF6), Color(0xFF62D7FF), Color(0xFF100B1B), Color(0xFF1A1228)),
-        "red" to Palette(Color(0xFFFF6B6B), Color(0xFFE53935), Color(0xFFFFB36B), Color(0xFF16090B), Color(0xFF241013)),
-        "ocean" to Palette(Color(0xFF54C8FF), Color(0xFF168BCE), Color(0xFF71E4E8), Color(0xFF06121E), Color(0xFF0B1D2D)),
-        "emerald" to Palette(Color(0xFF67E8A5), Color(0xFF16A765), Color(0xFFB6F36B), Color(0xFF06150F), Color(0xFF0D2118)),
-        "gold" to Palette(Color(0xFFFFD27A), Color(0xFFC18A25), Color(0xFFFFE6A8), Color(0xFF171108), Color(0xFF241B0D)),
-        "midnight" to Palette(Color(0xFF8EBBFF), Color(0xFF466DA8), Color(0xFFB3C8F2), Color(0xFF070D19), Color(0xFF101A2B)),
-        "aurora" to Palette(Color(0xFF63E9D0), Color(0xFF16AFA0), Color(0xFF8BDBFF), Color(0xFF061515), Color(0xFF0B2424)),
-        "pink" to Palette(Color(0xFFFF83C9), Color(0xFFD9469B), Color(0xFFFFB2E0), Color(0xFF190817), Color(0xFF281026)),
-        "silver" to Palette(Color(0xFFE0E7F0), Color(0xFF9AA8B8), Color(0xFFB9C7D8), Color(0xFF101216), Color(0xFF1A1F26)),
-        "graphite" to Palette(Color(0xFFD1D5DB), Color(0xFF777F8A), Color(0xFF9CA3AF), Color(0xFF101113), Color(0xFF1B1D20))
+        "purple" to Palette(Color(0xFF8B5CF6), Color(0xFF7C3AED), Color(0xFF0891B2), Color(0xFF111827), Color(0xFF1F2937)),
+        "red" to Palette(Color(0xFFF87171), Color(0xFFDC2626), Color(0xFFF59E0B), Color(0xFF18181B), Color(0xFF27272A)),
+        "ocean" to Palette(Color(0xFF38BDF8), Color(0xFF0284C7), Color(0xFF2DD4BF), Color(0xFF0C1926), Color(0xFF142B3D)),
+        "emerald" to Palette(Color(0xFF34D399), Color(0xFF059669), Color(0xFFA3E635), Color(0xFF0B1B16), Color(0xFF153329)),
+        "gold" to Palette(Color(0xFFFBBF24), Color(0xFFD97706), Color(0xFFFDE68A), Color(0xFF1C1917), Color(0xFF292524)),
+        "midnight" to Palette(Color(0xFF93C5FD), Color(0xFF3B82F6), Color(0xFFC4B5FD), Color(0xFF111827), Color(0xFF1E293B)),
+        "aurora" to Palette(Color(0xFF5EEAD4), Color(0xFF0D9488), Color(0xFF7DD3FC), Color(0xFF0F172A), Color(0xFF173344)),
+        "pink" to Palette(Color(0xFFF9A8D4), Color(0xFFDB2777), Color(0xFFFBCFE8), Color(0xFF1F1720), Color(0xFF302131)),
+        "silver" to Palette(Color(0xFFE2E8F0), Color(0xFF64748B), Color(0xFFCBD5E1), Color(0xFF111827), Color(0xFF1F2937)),
+        "graphite" to Palette(Color(0xFFD1D5DB), Color(0xFF6B7280), Color(0xFF9CA3AF), Color(0xFF111111), Color(0xFF202020)),
+        "glass" to Palette(Color(0xFF60A5FA), Color(0xFF2563EB), Color(0xFF2DD4BF), Color(0xFF101827), Color(0xFF1E293B)),
+        "neon" to Palette(Color(0xFFA3E635), Color(0xFF65A30D), Color(0xFF22D3EE), Color(0xFF101510), Color(0xFF1C281C)),
+        "gradient" to Palette(Color(0xFFA78BFA), Color(0xFF6366F1), Color(0xFF38BDF8), Color(0xFF15152B), Color(0xFF242444)),
+        "material" to Palette(Color(0xFF60A5FA), Color(0xFF2563EB), Color(0xFF34D399), Color(0xFF111827), Color(0xFF1F2937)),
+        "dashboard" to Palette(Color(0xFF2DD4BF), Color(0xFF0F766E), Color(0xFF93C5FD), Color(0xFF111827), Color(0xFF1E293B)),
+        "luxury" to Palette(Color(0xFFFCD34D), Color(0xFFB7791F), Color(0xFFE5E7EB), Color(0xFF18181B), Color(0xFF27272A)),
+        "mono_black" to Palette(Color(0xFF374151), Color(0xFF111827), Color(0xFF6B7280), Color(0xFF111827), Color(0xFF1F2937)),
+        "mono_white" to Palette(Color(0xFF475569), Color(0xFF334155), Color(0xFF64748B), Color(0xFFF8FAFC), Color(0xFFFFFFFF)),
+        "mono_green" to Palette(Color(0xFF22C55E), Color(0xFF16A34A), Color(0xFF86EFAC), Color(0xFF071A10), Color(0xFF102A1B)),
+        "mono_blue" to Palette(Color(0xFF60A5FA), Color(0xFF2563EB), Color(0xFF93C5FD), Color(0xFF0F172A), Color(0xFF1E293B))
     )
 }
 
